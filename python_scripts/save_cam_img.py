@@ -1,11 +1,12 @@
 import cv2
 import numpy as np
+import datetime
 
 # the index for the camera (0 should be integrated laptop cam)
 camera_port = 0
 
 # the number of frames to discard before saving
-ramp_frames = 30
+ramp_frames = 10
 
 camera = cv2.VideoCapture(camera_port)
 #set the width and height
@@ -14,7 +15,7 @@ camera.set(3,1280)
 camera.set(4,720)
 
 # the number of images to capture before blending
-frame_buffer_size = 10
+frame_buffer_size = 1
 # a list to store the captured images in
 frame_buffer = []
 
@@ -74,6 +75,27 @@ def save_tmp(image, index):
 	cv2.imwrite(file, image)
 	
 	
+def add_overlay(image):
+	color = [0.2, 0.2, 0.2]
+	today = datetime.datetime.now()
+	
+	day_text = today.strftime("DAY %j")
+	date_text = today.strftime("%B %d, %Y %H:%M")
+	
+	x = 10 #position of text
+	y = 680 #position of text
+	
+	# reference; http://www.cplusplus.com/forum/beginner/65318/
+	# draw the DAY XXX data
+	#font = cv2.initFont(cv.CV_FONT_HERSHEY_SIMPLEX, 1.1, 1.1, 0, 3, 8) #Creates a font
+	cv2.putText(image, day_text, (x,y),cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2) #Draw the text
+	
+	# draw the date in smaller text
+	#font = cv2.initFont(cv.CV_FONT_HERSHEY_SIMPLEX, 1, 1, 0, 3, 8) #Creates a font
+	cv2.putText(image, date_text, (x,y+25),cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2) #Draw the text
+	return image
+
+	
 for i in xrange(ramp_frames):
 		temp = get_image()
 		
@@ -94,6 +116,8 @@ for c in xrange(frame_buffer_size):
 file = "../frames/test_blend_image.png"
 
 blended_frame = blend();
+
+blended_frame = add_overlay(blended_frame)
 # write the rsult of the blend() function to the file
 cv2.imwrite(file, blended_frame)
 
