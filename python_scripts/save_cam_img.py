@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import datetime
+import os, os.path
+import time
 
 # the index for the camera (0 should be integrated laptop cam)
 camera_port = 0
@@ -8,14 +10,8 @@ camera_port = 0
 # the number of frames to discard before saving
 ramp_frames = 10
 
-camera = cv2.VideoCapture(camera_port)
-#set the width and height
-# reference: http://stackoverflow.com/questions/11420748/setting-camera-parameters-in-opencv-python
-camera.set(3,1280)
-camera.set(4,720)
-
 # the number of images to capture before blending
-frame_buffer_size = 1
+frame_buffer_size = 10
 # a list to store the captured images in
 frame_buffer = []
 
@@ -38,7 +34,7 @@ def get_image():
 def blend():
 	result = frame_buffer[0]
 	
-	print("Image color depth =" + str(result.dtype))
+	#print("Image color depth =" + str(result.dtype))
 	
 	# used as a multiplyer to scale the averaged image
 	alpha = 1.0 / frame_buffer_size
@@ -96,30 +92,58 @@ def add_overlay(image):
 	return image
 
 	
-for i in xrange(ramp_frames):
-		temp = get_image()
+	
+	
+while True:
+
+	camera = cv2.VideoCapture(camera_port)
+	#set the width and height
+	# reference: http://stackoverflow.com/questions/11420748/setting-camera-parameters-in-opencv-python
+	camera.set(3,1280)
+	camera.set(4,720)
+	#camera.set(3,1920)
+	#camera.set(4,1080)
+
+	frame_buffer = []
+	
+	for i in xrange(ramp_frames):
+			temp = get_image()
+			
+	for c in xrange(frame_buffer_size):		
+		#print("getting image #" + str(c))
+			
+		#print("adding image to frame buffer...")
+		image = get_image()
+
+		# I commented this out. If you include it, it stores all the
+		# recorded frames in the frames/tmp/ directory for debugging
+		#save_tmp(image, c)
 		
-for c in xrange(frame_buffer_size):		
-	print("getting image #" + str(c))
+		frame_buffer.append(image)
 		
-	print("adding image to frame buffer...")
-	image = get_image()
+		
 
-	# I commented this out. If you include it, it stores all the
-	# recorded frames in the frames/tmp/ directory for debugging
-	#save_tmp(image, c)
-	
-	frame_buffer.append(image)
-	
-	
-	
-file = "../frames/test_blend_image.png"
+	# get the week number for the sub dir
+	week = datetime.datetime.now().strftime("%U")
+		
+	dir = "../frames/blend/{}".format(week)
 
-blended_frame = blend();
+	if not os.path.exists(dir):
+		os.makedirs(dir)
+		
+	# count the number of images to get the next index
+	#image_no =  len([name for name in os.listdir(dir + '/') if os.path.isfile(name)]) + 1
+	image_no = len(os.walk(dir).next()[2]) +1
 
-blended_frame = add_overlay(blended_frame)
-# write the rsult of the blend() function to the file
-cv2.imwrite(file, blended_frame)
+	file = "../frames/blend/{0}/{1:06d}.png".format(week, image_no)
 
-del(camera)
-del(frame_buffer)
+	blended_frame = blend();
+
+	blended_frame = add_overlay(blended_frame)
+	# write the rsult of the blend() function to the file
+	cv2.imwrite(file, blended_frame)
+	
+	del(camera)
+
+	# sleep untill the next frame
+	#time.sleep(60)
